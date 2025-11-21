@@ -1,0 +1,137 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Mail, Lock, Eye, EyeOff, Shield, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { adminLogin } from '@/services/authService';
+
+function AdminLoginPage() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await adminLogin({ email, password });
+      
+      // Store admin info
+      localStorage.setItem('adminToken', response.token);
+      localStorage.setItem('adminUser', JSON.stringify({
+        id: response.id,
+        name: response.name,
+        email: response.email,
+        role: response.role
+      }));
+      
+      navigate('/admin/dashboard');
+    } catch (err) {
+      setError(err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-white">
+      {/* Background Decorative Elements - Blue Theme */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-blue-100 blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-blue-50 blur-3xl animate-pulse delay-1000" />
+        <div className="absolute top-1/2 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-50 blur-3xl animate-pulse delay-500" />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 flex min-h-screen flex-col px-4 py-6 sm:px-6 sm:py-8">
+        {/* Header */}
+        <div className="mb-8 sm:mb-12 flex items-center justify-between">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Admin Login</h1>
+          <a href="/" className="text-sm sm:text-base text-blue-600 hover:text-blue-700 font-medium transition-colors">
+            Về trang chủ
+          </a>
+        </div>
+
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <div className="w-full max-w-md space-y-6 sm:space-y-8">
+            {/* Admin Icon */}
+            <div className="flex justify-center">
+              <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-blue-100 ring-4 ring-blue-50">
+                <Shield className="h-10 w-10 sm:h-12 sm:w-12 text-blue-600" />
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Error Message */}
+              {error && (
+                <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
+                  {error}
+                </div>
+              )}
+
+              {/* Email Field */}
+              <div className="relative">
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Email admin"
+                  className="h-12 text-base border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              {/* Password Field */}
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Mật khẩu"
+                  className="h-12 pr-12 text-base border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+
+              {/* Login Button */}
+              <Button 
+                type="submit" 
+                className="h-12 w-full gap-2 bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-200" 
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Đang đăng nhập...
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4" />
+                    ĐĂNG NHẬP ADMIN
+                  </>
+                )}
+              </Button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default AdminLoginPage;
+

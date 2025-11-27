@@ -3,9 +3,11 @@
  * Sử dụng Google Identity Services để đăng nhập
  */
 
+import { getGoogleClientId } from './config';
+
 const getClientId = () => {
-  // Google OAuth Client ID
-  return '700398442370-0dfqk14t9qun39lts39c1u37f332ni95.apps.googleusercontent.com';
+  // Google OAuth Client ID from environment variable
+  return getGoogleClientId();
 };
 
 export const initializeGoogleAuth = (onSuccess, onError) => {

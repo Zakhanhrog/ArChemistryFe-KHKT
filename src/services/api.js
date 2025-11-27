@@ -1,7 +1,11 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '@/utils/config';
+
+// Get API base URL from environment variable
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

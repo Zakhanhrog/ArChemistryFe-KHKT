@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from './config';
+
 /**
  * Normalizes image URLs to ensure they are absolute URLs.
  * Handles both relative URLs (for backward compatibility) and absolute URLs.
@@ -19,14 +21,14 @@ export const normalizeImageUrl = (url) => {
 
   // If it's a relative URL (starts with /), convert to absolute URL
   if (trimmedUrl.startsWith('/')) {
-    const apiBaseUrl = 'http://localhost:8080';
+    const apiBaseUrl = getApiBaseUrl();
     // Remove trailing slash from base URL if present
     const baseUrl = apiBaseUrl.replace(/\/$/, '');
     return `${baseUrl}${trimmedUrl}`;
   }
 
   // If it doesn't start with /, assume it's a relative path and prepend /
-  const apiBaseUrl = 'http://localhost:8080';
+  const apiBaseUrl = getApiBaseUrl();
   const baseUrl = apiBaseUrl.replace(/\/$/, '');
   return `${baseUrl}/${trimmedUrl}`;
 };

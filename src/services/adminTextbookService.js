@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '@/utils/config';
 
-const baseURL = 'http://localhost:8080';
+const baseURL = getApiBaseUrl();
 
 // Create a separate axios instance for admin requests
 const adminApi = axios.create({

@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '@/utils/config';
 
-const baseURL = 'http://localhost:8080';
+const baseURL = getApiBaseUrl();
 
 export const uploadFile = async (file, folder = 'avatars') => {
   const formData = new FormData();

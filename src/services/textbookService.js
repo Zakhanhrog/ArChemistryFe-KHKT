@@ -14,8 +14,10 @@ export const getTextbookById = async (id) => {
   return response.data;
 };
 
+import { getApiBaseUrl } from '@/utils/config';
+
 export const getTextbookPdfUrl = (id) => {
-  const baseURL = api.defaults.baseURL || 'http://localhost:8080';
+  const baseURL = api.defaults.baseURL || getApiBaseUrl();
   return `${baseURL}${basePath}/${id}/pdf`;
 };
 

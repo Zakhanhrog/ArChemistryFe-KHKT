@@ -8,6 +8,7 @@ import test2Model from '@/assets/models/test2.glb';
 import { Button } from '@/components/ui/button';
 import { Camera, ChevronDown, Info, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import api from '@/services/api';
+import { getApiBaseUrl } from '@/utils/config';
 
 export default () => {
   const navigate = useNavigate();
@@ -133,7 +134,7 @@ export default () => {
         
         if (response.data.success && response.data.data) {
           const config = response.data.data;
-          const baseURL = api.defaults.baseURL || 'http://localhost:8080';
+          const baseURL = api.defaults.baseURL || getApiBaseUrl();
           
           // Build full HTTP URLs cho marker và models
           if (config.markerFile) {

@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Camera,
   Atom,
   BookOpen,
   ArrowRight,
+  Bot,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import useAuthStore from '@/hooks/useAuth';
@@ -17,6 +18,17 @@ function HomePage() {
   const [direction, setDirection] = useState(1);
   const [pageLoaded, setPageLoaded] = useState(false);
   const [slideKey, setSlideKey] = useState(0); // Key để reset animation khi chuyển slide
+  const [isFadingOut, setIsFadingOut] = useState(false); // State để track fade out khi chuyển trang
+  const vantaRef = useRef(null);
+  const vantaEffect = useRef(null);
+
+  // Hàm để fade out trước khi navigate
+  const handleNavigate = (navigateFn) => {
+    setIsFadingOut(true);
+    setTimeout(() => {
+      navigateFn();
+    }, 400); // Đợi fade out hoàn thành (400ms)
+  };
 
   const nextSlide = () => {
     setIsVisible(false);
@@ -41,7 +53,8 @@ function HomePage() {
   const slides = useMemo(() => [
     {
       icon: Atom,
-      title: 'Chào mừng đến AR Chemistry',
+      title: 'Chào mừng đến với',
+      titleBrand: 'chemar.',
       subtitle: 'Công nghệ AR tiên tiến',
       description: 'Khám phá thế giới hóa học một cách trực quan và sinh động với công nghệ thực tế ảo tăng cường',
       features: [
@@ -76,6 +89,31 @@ function HomePage() {
       buttonText: 'Trải nghiệm ngay',
     },
     {
+      icon: Bot,
+      title: 'Trợ Lý AI Thông Minh',
+      subtitle: 'Học tập với AI',
+      description: 'Trợ lý AI chuyên về hóa học luôn sẵn sàng giải đáp mọi thắc mắc, giúp bạn học tập hiệu quả hơn',
+      cards: [
+        {
+          icon: '/icon/gtkhainiem.svg',
+          title: 'Giải thích khái niệm',
+          description: 'Hiểu rõ các khái niệm hóa học phức tạp',
+        },
+        {
+          icon: '/icon/tcthongtin.svg',
+          title: 'Tra cứu thông tin',
+          description: 'Tìm hiểu về nguyên tố và phân tử',
+        },
+        {
+          icon: '/icon/tlcauhoi.svg',
+          title: 'Trả lời câu hỏi',
+          description: 'Giải đáp mọi thắc mắc về hóa học',
+        },
+      ],
+      buttonText: 'Khám phá AI',
+      buttonAction: () => handleNavigate(() => navigate(isAuthenticated ? '/ar?tab=ai-assistant' : '/welcome')),
+    },
+    {
       icon: Camera,
       title: 'Bắt Đầu Ngay',
       subtitle: 'Sẵn sàng khám phá?',
@@ -86,13 +124,20 @@ function HomePage() {
         ? 'Chào mừng bạn trở lại! Nhấn để vào ứng dụng'
         : 'Chỉ cần một cú click để bắt đầu hành trình khám phá của bạn',
       buttonText: isAuthenticated ? 'Vào ứng dụng' : 'Bắt đầu ngay',
-      buttonAction: () => navigate(isAuthenticated ? '/ar?tab=overview' : '/login'),
+      buttonAction: () => handleNavigate(() => navigate(isAuthenticated ? '/ar?tab=explore' : '/welcome')),
     },
   ], [isAuthenticated, navigate]);
 
   useEffect(() => {
     setIsVisible(true);
   }, [currentSlide]);
+
+  // Redirect nếu đã đăng nhập - không cho quay lại trang giới thiệu
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/ar?tab=explore', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   // Hiệu ứng fade-in khi trang được load
   useEffect(() => {
@@ -103,18 +148,60 @@ function HomePage() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Khởi tạo Vanta Clouds background
+  useEffect(() => {
+    let mounted = true;
+    
+    const initVanta = () => {
+      if (mounted && typeof window !== 'undefined' && window.VANTA && vantaRef.current) {
+        vantaEffect.current = window.VANTA.CLOUDS({
+          el: vantaRef.current,
+          mouseControls: true,
+          touchControls: true,
+          gyroControls: false,
+          minHeight: 200.00,
+          minWidth: 200.00,
+          skyColor: 0x50bbed,
+          speed: 0.90,
+        });
+      }
+    };
+
+    // Kiểm tra nếu VANTA đã sẵn sàng
+    if (typeof window !== 'undefined' && window.VANTA) {
+      initVanta();
+    } else {
+      // Đợi scripts load xong
+      const checkVanta = setInterval(() => {
+        if (typeof window !== 'undefined' && window.VANTA) {
+          clearInterval(checkVanta);
+          initVanta();
+        }
+      }, 100);
+
+      // Timeout sau 5 giây nếu scripts không load
+      setTimeout(() => {
+        clearInterval(checkVanta);
+      }, 5000);
+    }
+
+    return () => {
+      mounted = false;
+      if (vantaEffect.current) {
+        vantaEffect.current.destroy();
+        vantaEffect.current = null;
+      }
+    };
+  }, []);
+
   const current = slides[currentSlide];
 
   return (
-    <div className={`relative flex min-h-screen flex-col overflow-hidden bg-white transition-opacity duration-700 ease-out ${
-      pageLoaded ? 'opacity-100' : 'opacity-0'
+    <div className={`relative flex min-h-screen flex-col overflow-hidden bg-white transition-opacity duration-[400ms] ease-out ${
+      pageLoaded && !isFadingOut ? 'opacity-100' : 'opacity-0'
     }`}>
-      {/* Background Decorative Elements - Blue Theme */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-blue-100 blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-blue-50 blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-50 blur-3xl animate-pulse delay-500" />
-      </div>
+      {/* Vanta Clouds Background */}
+      <div ref={vantaRef} className="absolute inset-0 z-0" />
 
       {/* Logo Header */}
       <div className={`relative z-10 flex justify-center pt-6 sm:pt-8 transition-all duration-700 ease-out delay-200 ${
@@ -151,9 +238,23 @@ function HomePage() {
               <p className="text-sm font-medium uppercase tracking-wider text-blue-600">
                 {current.subtitle}
               </p>
+              <div className="space-y-2">
               <h1 className="text-4xl font-bold tracking-tight sm:text-5xl text-gray-900">
                 {current.title}
               </h1>
+                {current.titleBrand && (
+                  <h1 
+                    className="text-4xl font-normal tracking-tight sm:text-5xl bg-clip-text text-transparent leading-none animate-gradient"
+                    style={{ 
+                      fontFamily: "'Momo Trust Display', sans-serif", 
+                      backgroundImage: 'linear-gradient(90deg, #2563eb, #27B0DA, #8b5cf6, #ec4899, #2563eb)',
+                      backgroundSize: '200% 100%'
+                    }}
+                  >
+                    {current.titleBrand}
+                  </h1>
+                )}
+              </div>
               <p className="mx-auto max-w-sm text-base leading-relaxed text-gray-600">
                 {current.description}
               </p>
@@ -168,7 +269,7 @@ function HomePage() {
                     return (
                       <div
                         key={`feature-${slideKey}-${index}`}
-                        className={`flex items-center gap-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 animate-slide-in-right`}
+                        className={`flex items-center gap-4 rounded-2xl border border-white/20 bg-white/25 backdrop-blur-2xl shadow-lg p-4 animate-slide-in-right`}
                         style={{
                           animationDelay: `${index * 150}ms`,
                           animationFillMode: 'both',
@@ -186,28 +287,56 @@ function HomePage() {
                 </div>
               )}
 
-              {/* Slide 1: Feature Cards */}
+              {/* Slide 1: Feature Cards - Style giống slide đầu tiên */}
               {currentSlide === 1 && current.cards && (
-                <div className="grid gap-4">
+                <div className="space-y-4">
                   {current.cards.map((card, index) => {
                     return (
                       <div
                         key={`card-${slideKey}-${index}`}
-                        className={`rounded-2xl border border-blue-100 bg-white p-5 shadow-sm animate-slide-in-right`}
+                        className={`flex items-center gap-4 rounded-2xl border border-white/20 bg-white/25 backdrop-blur-2xl shadow-lg p-4 animate-slide-in-right`}
                         style={{
                           animationDelay: `${index * 150}ms`,
                           animationFillMode: 'both',
                         }}
                       >
-                        <div className="mb-3 flex items-center gap-3">
+                        <img 
+                          src={card.icon} 
+                          alt={card.title}
+                          className="h-16 w-16 shrink-0 object-contain"
+                        />
+                        <div className="flex-1">
+                          <p className="text-base font-medium text-gray-900">{card.title}</p>
+                          <p className="text-sm text-gray-600 mt-1">{card.description}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Slide 2: AI Assistant Cards - Style giống slide đầu tiên */}
+              {currentSlide === 2 && current.cards && (
+                <div className="space-y-4">
+                  {current.cards.map((card, index) => {
+                    return (
+                      <div
+                        key={`card-${slideKey}-${index}`}
+                        className={`flex items-center gap-4 rounded-2xl border border-white/20 bg-white/25 backdrop-blur-2xl shadow-lg p-4 animate-slide-in-right`}
+                        style={{
+                          animationDelay: `${index * 150}ms`,
+                          animationFillMode: 'both',
+                        }}
+                      >
                           <img 
                             src={card.icon} 
                             alt={card.title}
-                            className="h-9 w-9 shrink-0 object-contain"
+                          className="h-16 w-16 shrink-0 object-contain"
                           />
-                          <h3 className="text-lg font-semibold text-gray-900">{card.title}</h3>
+                        <div className="flex-1">
+                          <p className="text-base font-medium text-gray-900">{card.title}</p>
+                          <p className="text-sm text-gray-600 mt-1">{card.description}</p>
                         </div>
-                        <p className="text-sm text-gray-600">{card.description}</p>
                       </div>
                     );
                   })}
@@ -218,18 +347,25 @@ function HomePage() {
         </div>
 
         {/* Bottom Section - Fixed at bottom */}
-        <div className={`fixed inset-x-0 bottom-0 z-20 bg-white px-4 py-4 sm:px-6 sm:py-6 transition-all duration-700 ease-out delay-300 ${
+        <div className={`fixed inset-x-0 bottom-0 z-20 px-4 py-4 sm:px-6 sm:py-6 transition-all duration-700 ease-out delay-300 ${
           pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}>
           <div className="mx-auto w-full max-w-md space-y-3 sm:space-y-4">
             {/* Next Button */}
             <Button
               size="lg"
-              className="h-14 w-full gap-2 bg-blue-600 text-base font-semibold text-white shadow-lg shadow-blue-200"
-              onClick={current.buttonAction || nextSlide}
+              className="h-14 w-full gap-2 text-base font-semibold text-white shadow-lg"
+              style={{ backgroundColor: '#1689E4', boxShadow: '0 10px 15px -3px rgba(22, 137, 228, 0.3)' }}
+              onClick={() => {
+                if (currentSlide === slides.length - 1 && current.buttonAction) {
+                  handleNavigate(current.buttonAction);
+                } else {
+                  nextSlide();
+                }
+              }}
             >
-              {current.buttonText}
-              {currentSlide < 2 && (
+              {currentSlide === slides.length - 1 ? 'Tìm hiểu ngay' : 'Tiếp theo'}
+              {currentSlide < slides.length - 1 && (
                 <ArrowRight className="h-4 w-4" />
               )}
             </Button>
@@ -243,9 +379,10 @@ function HomePage() {
                   onClick={() => goToSlide(index)}
                   className={`h-2 rounded-full transition-all ${
                     index === currentSlide
-                      ? 'w-8 bg-blue-600 shadow-lg shadow-blue-200'
+                      ? 'w-8 shadow-lg'
                       : 'w-2 bg-gray-300'
                   }`}
+                  style={index === currentSlide ? { backgroundColor: '#1689E4', boxShadow: '0 10px 15px -3px rgba(22, 137, 228, 0.3)' } : {}}
                   aria-label={`Go to slide ${index + 1}`}
                 />
               ))}

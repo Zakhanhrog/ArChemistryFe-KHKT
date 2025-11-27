@@ -165,7 +165,10 @@ function ChangePasswordDialog({ open, onOpenChange }) {
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-10"
+              className="flex-1 text-white h-10"
+              style={{ backgroundColor: '#1689E4' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1373C4'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1689E4'}
               disabled={isLoading}
             >
               {isLoading ? 'Đang xử lý...' : 'Đổi mật khẩu'}

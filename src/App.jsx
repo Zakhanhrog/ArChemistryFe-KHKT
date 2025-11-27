@@ -1,12 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
-import HomePage from './pages/HomePage.jsx';
-import ARPage from './pages/ARPage.jsx';
-import LoginPage from './pages/LoginPage.jsx';
-import RegisterPage from './pages/RegisterPage.jsx';
-import AdminLoginPage from './pages/admin/AdminLoginPage.jsx';
-import AdminDashboard from './pages/admin/AdminDashboard.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
+
+// Lazy load pages để giảm initial bundle size
+const HomePage = lazy(() => import('./pages/HomePage.jsx'));
+const ARPage = lazy(() => import('./pages/ARPage.jsx'));
+const ARModelDetailPage = lazy(() => import('./pages/ARModelDetailPage.jsx'));
+const WelcomePage = lazy(() => import('./pages/WelcomePage.jsx'));
+const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'));
+const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage.jsx'));
+const AdminLayout = lazy(() => import('./components/admin/AdminLayout.jsx'));
+const DashboardPage = lazy(() => import('./pages/admin/DashboardPage.jsx'));
+const ARManagementPage = lazy(() => import('./pages/admin/ARManagementPage.jsx'));
+const ArticleManagementPage = lazy(() => import('./pages/admin/ArticleManagementPage.jsx'));
+const TextbookManagementPage = lazy(() => import('./pages/admin/TextbookManagementPage.jsx'));
+const UsersPage = lazy(() => import('./pages/admin/UsersPage.jsx'));
+const LoginHistoryPage = lazy(() => import('./pages/admin/LoginHistoryPage.jsx'));
+
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="text-gray-500">Đang tải...</div>
+  </div>
+);
 
 function App() {
   const location = useLocation();
@@ -30,15 +46,26 @@ function App() {
       {showLoading ? (
         <LoadingScreen onLoadingComplete={handleLoadingComplete} />
       ) : (
+        <Suspense fallback={<LoadingFallback />}>
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/ar" element={<ARPage />} />
+      <Route path="/ar/model-detail" element={<ARModelDetailPage />} />
+      <Route path="/welcome" element={<WelcomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
-      <Route path="/admin/dashboard" element={<AdminDashboard />} />
-      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<DashboardPage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="ar" element={<ARManagementPage />} />
+        <Route path="articles" element={<ArticleManagementPage />} />
+        <Route path="textbooks" element={<TextbookManagementPage />} />
+        <Route path="users" element={<UsersPage />} />
+        <Route path="login-history" element={<LoginHistoryPage />} />
+      </Route>
     </Routes>
+        </Suspense>
       )}
     </>
   );

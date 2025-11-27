@@ -235,7 +235,10 @@ function UserManagement() {
             </Button>
             <Button
               onClick={handleUpdateUser}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="text-white"
+              style={{ backgroundColor: '#1689E4' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1373C4'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1689E4'}
             >
               Cập nhật
             </Button>

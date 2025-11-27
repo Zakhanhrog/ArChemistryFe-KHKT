@@ -19,14 +19,14 @@ export const normalizeImageUrl = (url) => {
 
   // If it's a relative URL (starts with /), convert to absolute URL
   if (trimmedUrl.startsWith('/')) {
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+    const apiBaseUrl = 'http://localhost:8080';
     // Remove trailing slash from base URL if present
     const baseUrl = apiBaseUrl.replace(/\/$/, '');
     return `${baseUrl}${trimmedUrl}`;
   }
 
   // If it doesn't start with /, assume it's a relative path and prepend /
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+  const apiBaseUrl = 'http://localhost:8080';
   const baseUrl = apiBaseUrl.replace(/\/$/, '');
   return `${baseUrl}/${trimmedUrl}`;
 };

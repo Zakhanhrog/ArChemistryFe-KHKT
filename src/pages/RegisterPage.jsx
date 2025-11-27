@@ -1,15 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Mail, Lock, Eye, EyeOff, Camera, Check } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/toast';
 import useAuthStore from '@/hooks/useAuth';
 
 function RegisterPage() {
   const navigate = useNavigate();
-  const { setUser } = useAuthStore();
+  const { success } = useToast();
+  const { isAuthenticated } = useAuthStore();
   const [formData, setFormData] = useState({
     name: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -19,6 +22,34 @@ function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [pageLoaded, setPageLoaded] = useState(false);
+  const [isFadingOut, setIsFadingOut] = useState(false);
+  const vantaRef = useRef(null);
+  const vantaEffect = useRef(null);
+
+  // Redirect nếu đã đăng nhập - không cho quay lại trang đăng ký
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/ar?tab=explore', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Fade in effect khi page load
+  useEffect(() => {
+    setPageLoaded(false);
+    const timer = setTimeout(() => {
+      setPageLoaded(true);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Hàm để fade out trước khi navigate
+  const handleNavigate = (path) => {
+    setIsFadingOut(true);
+    setTimeout(() => {
+      navigate(path);
+    }, 400);
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -49,15 +80,21 @@ function RegisterPage() {
 
     try {
       const { register } = await import('@/services/authService');
-      const response = await register({
+      await register({
         name: formData.name,
+        username: formData.username.trim() || undefined,
         email: formData.email,
         password: formData.password,
         confirmPassword: formData.confirmPassword,
       });
 
-      setUser(response);
-      navigate('/ar?tab=profile');
+      // Hiển thị thông báo thành công
+      success('Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.', 4000);
+      
+      // Chuyển về trang đăng nhập sau 500ms để toast hiển thị
+      setTimeout(() => {
+        navigate('/login');
+      }, 500);
     } catch (err) {
       setError(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
     } finally {
@@ -65,32 +102,86 @@ function RegisterPage() {
     }
   };
 
+  // Khởi tạo Vanta Clouds background với speed = 0
+  useEffect(() => {
+    let mounted = true;
+    
+    const initVanta = () => {
+      if (mounted && typeof window !== 'undefined' && window.VANTA && vantaRef.current) {
+        vantaEffect.current = window.VANTA.CLOUDS({
+          el: vantaRef.current,
+          mouseControls: true,
+          touchControls: true,
+          gyroControls: false,
+          minHeight: 200.00,
+          minWidth: 200.00,
+          skyColor: 0x50bbed,
+          speed: 0,
+        });
+      }
+    };
+
+    // Kiểm tra nếu VANTA đã sẵn sàng
+    if (typeof window !== 'undefined' && window.VANTA) {
+      initVanta();
+    } else {
+      // Đợi scripts load xong
+      const checkVanta = setInterval(() => {
+        if (typeof window !== 'undefined' && window.VANTA) {
+          clearInterval(checkVanta);
+          initVanta();
+        }
+      }, 100);
+
+      // Timeout sau 5 giây nếu scripts không load
+      setTimeout(() => {
+        clearInterval(checkVanta);
+      }, 5000);
+    }
+
+    return () => {
+      mounted = false;
+      if (vantaEffect.current) {
+        vantaEffect.current.destroy();
+        vantaEffect.current = null;
+      }
+    };
+  }, []);
+
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-white">
-      {/* Background Decorative Elements - Blue Theme */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-blue-100 blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-blue-50 blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-50 blur-3xl animate-pulse delay-500" />
-      </div>
+    <div className={`relative flex min-h-screen flex-col overflow-hidden bg-white transition-opacity duration-[400ms] ease-out ${
+      pageLoaded && !isFadingOut ? 'opacity-100' : 'opacity-0'
+    }`}>
+      {/* Vanta Clouds Background */}
+      <div ref={vantaRef} className="absolute inset-0 z-0" />
 
       {/* Content */}
       <div className="relative z-10 flex min-h-screen flex-col px-4 py-6 sm:px-6 sm:py-8">
         {/* Header */}
         <div className="mb-8 sm:mb-12 flex items-center justify-between">
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Đăng ký</h1>
-        <Link to="/login" className="text-sm sm:text-base text-blue-600 hover:text-blue-700 font-medium transition-colors">
+        <button
+          onClick={() => handleNavigate('/login')}
+          className="text-sm sm:text-base text-blue-600 hover:text-blue-700 font-medium transition-colors"
+        >
           Đăng nhập
-        </Link>
+        </button>
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center">
         <div className="w-full max-w-md space-y-6 sm:space-y-8">
-          {/* Camera Icon */}
+          {/* Logo */}
           <div className="flex justify-center">
-            <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-blue-100 ring-4 ring-blue-50">
-              <Camera className="h-10 w-10 sm:h-12 sm:w-12 text-blue-600" />
-            </div>
+            <span 
+              className="h-14 sm:h-16 flex items-center font-normal bg-clip-text text-transparent leading-none"
+              style={{ 
+                fontFamily: "'Momo Trust Display', sans-serif", 
+                fontSize: '3.54rem',
+                backgroundImage: 'linear-gradient(to right, #2563eb, #27B0DA)'
+              }}
+            >
+              chemar.
+            </span>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -101,6 +192,37 @@ function RegisterPage() {
               </div>
             )}
 
+            {/* Name Field */}
+            <div className="relative">
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                placeholder="Họ và tên"
+                className="h-12 text-base border-white/20 bg-white/25 backdrop-blur-2xl focus:border-white/40 focus:ring-0 placeholder:text-gray-600"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                minLength={2}
+                maxLength={100}
+              />
+            </div>
+
+            {/* Username Field */}
+            <div className="relative">
+              <Input
+                id="username"
+                name="username"
+                type="text"
+                placeholder="Tên đăng nhập (tùy chọn)"
+                className="h-12 text-base border-white/20 bg-white/25 backdrop-blur-2xl focus:border-white/40 focus:ring-0 placeholder:text-gray-600"
+                value={formData.username}
+                onChange={handleChange}
+                minLength={3}
+                maxLength={50}
+              />
+            </div>
+
             {/* Email Field */}
             <div className="relative">
               <Input
@@ -108,26 +230,10 @@ function RegisterPage() {
                 name="email"
                 type="email"
                 placeholder="Địa chỉ email"
-                className="h-12 text-base border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                className="h-12 text-base border-white/20 bg-white/25 backdrop-blur-2xl focus:border-white/40 focus:ring-0 placeholder:text-gray-600"
                 value={formData.email}
                 onChange={handleChange}
                 required
-              />
-            </div>
-
-            {/* Name Field */}
-            <div className="relative">
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                placeholder="Tên đăng nhập"
-                className="h-12 text-base border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                minLength={2}
-                maxLength={100}
               />
             </div>
 
@@ -138,7 +244,7 @@ function RegisterPage() {
                 name="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Mật khẩu"
-                className="h-12 pr-12 text-base border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                className="h-12 pr-12 text-base border-white/20 bg-white/25 backdrop-blur-2xl focus:border-white/40 focus:ring-0 placeholder:text-gray-600"
                 value={formData.password}
                 onChange={handleChange}
                 required
@@ -160,7 +266,7 @@ function RegisterPage() {
                 name="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="Nhập lại mật khẩu"
-                className="h-12 pr-12 text-base border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                className="h-12 pr-12 text-base border-white/20 bg-white/25 backdrop-blur-2xl focus:border-white/40 focus:ring-0 placeholder:text-gray-600"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
@@ -175,7 +281,8 @@ function RegisterPage() {
             </div>
 
             {/* Terms Agreement Checkbox */}
-            <div className="flex items-start gap-3">
+            <div className="flex items-center gap-3">
+              <div className="relative flex items-center justify-center">
               <input
                 type="checkbox"
                 id="agreeToTerms"
@@ -184,11 +291,21 @@ function RegisterPage() {
                   setAgreeToTerms(e.target.checked);
                   setError('');
                 }}
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <label htmlFor="agreeToTerms" className="text-sm text-gray-700 cursor-pointer">
+                  className="peer h-5 w-5 appearance-none rounded border-2 border-white/40 bg-white/25 backdrop-blur-2xl cursor-pointer transition-all checked:bg-[#1689E4] checked:border-[#1689E4] focus:outline-none focus:ring-0"
+                />
+                <svg
+                  className="absolute h-3 w-3 pointer-events-none opacity-0 peer-checked:opacity-100 text-white transition-opacity"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <label htmlFor="agreeToTerms" className="text-sm text-gray-800 cursor-pointer leading-relaxed">
                 Tôi đồng ý với{' '}
-                <Link to="#" className="text-blue-600 hover:text-blue-700 underline">
+                <Link to="#" className="text-[#1689E4] hover:text-[#1373C4] underline font-medium transition-colors">
                   điều khoản dịch vụ
                 </Link>
               </label>
@@ -197,7 +314,10 @@ function RegisterPage() {
             {/* Register Button */}
             <Button 
               type="submit" 
-              className="h-12 w-full gap-2 bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed" 
+              className="h-12 w-full gap-2 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: '#1689E4', boxShadow: '0 10px 15px -3px rgba(22, 137, 228, 0.3)' }}
+              onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#1373C4')}
+              onMouseLeave={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#1689E4')} 
               disabled={isLoading || !agreeToTerms}
             >
               {isLoading ? (

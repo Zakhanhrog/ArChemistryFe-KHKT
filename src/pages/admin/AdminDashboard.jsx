@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { LogOut, Users, Shield, Activity } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { LogOut, Users, Shield, Activity, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { adminLogout } from '@/services/authService';
@@ -40,6 +40,12 @@ function AdminDashboard() {
               <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
             </div>
             <div className="flex items-center gap-4">
+              <Link to="/admin/ar">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Target className="h-4 w-4" />
+                  Quản lý AR
+                </Button>
+              </Link>
               <span className="text-sm text-gray-600">{adminUser.name}</span>
               <Button
                 variant="outline"

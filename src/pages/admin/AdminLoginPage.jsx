@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Shield, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,14 @@ function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Redirect if already logged in as admin
+  useEffect(() => {
+    const adminToken = localStorage.getItem('adminToken');
+    if (adminToken) {
+      navigate('/admin/dashboard', { replace: true });
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,7 +38,8 @@ function AdminLoginPage() {
         role: response.role
       }));
       
-      navigate('/admin/dashboard');
+      // Use replace: true to prevent going back to login page
+      navigate('/admin/dashboard', { replace: true });
     } catch (err) {
       setError(err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
     } finally {
@@ -74,12 +83,12 @@ function AdminLoginPage() {
                 </div>
               )}
 
-              {/* Email Field */}
+              {/* Email/Username Field */}
               <div className="relative">
                 <Input
                   id="email"
-                  type="email"
-                  placeholder="Email admin"
+                  type="text"
+                  placeholder="Email hoặc tên đăng nhập"
                   className="h-12 text-base border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -110,7 +119,10 @@ function AdminLoginPage() {
               {/* Login Button */}
               <Button 
                 type="submit" 
-                className="h-12 w-full gap-2 bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-200" 
+                className="h-12 w-full gap-2 text-white shadow-lg"
+                style={{ backgroundColor: '#1689E4', boxShadow: '0 10px 15px -3px rgba(22, 137, 228, 0.3)' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1373C4'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1689E4'} 
                 disabled={isLoading}
               >
                 {isLoading ? (

@@ -10,19 +10,19 @@
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 217 91% 60%;
+    --primary: 207 83% 49%;
     --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222 47% 11%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215 16% 47%;
-    --accent: 217 91% 60%;
+    --accent: 207 83% 49%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 217 91% 60%;
+    --ring: 207 83% 49%;
     --radius: 0.75rem;
   }
 
@@ -55,4 +55,352 @@
   body {
     @apply bg-white text-foreground antialiased;
   }
+
+  /* Apply Momo Trust Sans font to all headings with lighter weight */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Momo Trust Sans', sans-serif;
+    font-weight: 200;
+  }
+}
+
+@keyframes gentle-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-gentle-pulse {
+  animation: gentle-pulse 2s ease-in-out infinite;
+}
+
+@keyframes scaleX {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.animate-scale-x {
+  animation: scaleX 0.3s ease-out;
+  transform-origin: center;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+@keyframes gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-flow {
+  background: linear-gradient(-45deg, #3b82f6, #2563eb, #1d4ed8, #1e40af, #1e3a8a, #3b82f6, #60a5fa, #93c5fd, #3b82f6, #2563eb);
+  background-size: 400% 400%;
+  animation: gradient-flow 6s ease infinite;
+}
+
+@keyframes bounce-horizontal {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+.animate-bounce-horizontal {
+  animation: bounce-horizontal 1s ease-in-out infinite;
+}
+
+/* Prose styles for article content */
+.prose {
+  @apply text-gray-800;
+}
+
+.prose h1 {
+  @apply text-3xl text-gray-900 mb-6 mt-8;
+  font-family: 'Momo Trust Sans', sans-serif;
+  font-weight: 200;
+}
+
+.prose h2 {
+  @apply text-2xl text-gray-900 mb-4 mt-6;
+  font-family: 'Momo Trust Sans', sans-serif;
+  font-weight: 200;
+}
+
+.prose h3 {
+  @apply text-xl text-gray-900 mb-3 mt-5;
+  font-family: 'Momo Trust Sans', sans-serif;
+  font-weight: 200;
+}
+
+.prose p {
+  @apply mb-4 leading-relaxed text-justify;
+}
+
+.prose ul, .prose ol {
+  @apply mb-4 ml-6 space-y-2;
+}
+
+.prose ul {
+  @apply list-disc;
+}
+
+.prose ol {
+  @apply list-decimal;
+}
+
+.prose li {
+  @apply leading-relaxed;
+}
+
+.prose strong {
+  @apply font-bold text-gray-900;
+}
+
+.prose em {
+  @apply italic;
+}
+
+.prose a {
+  @apply text-blue-600 hover:text-blue-700 underline;
+}
+
+.prose img {
+  @apply rounded-lg my-4 max-w-full h-auto;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-gray-300 pl-4 italic my-4;
+}
+
+.prose code {
+  @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono;
+}
+
+.prose pre {
+  @apply bg-gray-100 p-4 rounded-lg overflow-x-auto my-4;
+}
+
+.prose pre code {
+  @apply bg-transparent p-0;
+}
+
+/* Tiptap Editor Styles */
+.ProseMirror {
+  outline: none;
+  min-height: 300px;
+  padding: 1rem;
+  font-weight: normal;
+  color: #1f2937;
+}
+
+.ProseMirror p {
+  font-weight: normal;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #9ca3af;
+  pointer-events: none;
+  height: 0;
+  font-weight: normal;
+}
+
+.ProseMirror-focused {
+  outline: none;
+}
+
+.ProseMirror h1 {
+  font-size: 1.875rem;
+  font-weight: 200;
+  margin-top: 2rem;
+  margin-bottom: 1.5rem;
+  font-family: 'Momo Trust Sans', sans-serif;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 200;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  font-family: 'Momo Trust Sans', sans-serif;
+}
+
+.ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 200;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  font-family: 'Momo Trust Sans', sans-serif;
+}
+
+.ProseMirror strong {
+  font-weight: 700;
+}
+
+.ProseMirror em {
+  font-style: italic;
+}
+
+.ProseMirror ul, .ProseMirror ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+}
+
+.ProseMirror li {
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+.ProseMirror a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.ProseMirror a:hover {
+  color: #1d4ed8;
+}
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Google Sign-in Button Styling */
+#google-signin-button {
+  border-radius: 9999px !important;
+  overflow: hidden !important;
+  background: rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  padding: 2px !important;
+}
+
+#google-signin-button iframe {
+  border-radius: 9999px !important;
+  border: none !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  width: 100% !important;
+  height: 48px !important;
+}
+
+#google-signin-button div {
+  border-radius: 9999px !important;
+  border: none !important;
+  overflow: hidden !important;
+  background: transparent !important;
+}
+
+#google-signin-button button {
+  border-radius: 9999px !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  width: 100% !important;
+  height: 48px !important;
+}
+
+/* Override Google button internal styles */
+#google-signin-button iframe[src*="accounts.google.com"] {
+  background: transparent !important;
+}
+
+/* Free Trial Button Animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(22, 137, 228, 0.4), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(22, 137, 228, 0), 0 10px 25px -3px rgba(22, 137, 228, 0.3);
+  }
+}
+
+@keyframes badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 4px rgba(22, 137, 228, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(22, 137, 228, 0.5);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-badge-pulse {
+  animation: badge-pulse 1.5s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 3s infinite;
 }

@@ -11,6 +11,7 @@ export const register = async (data) => {
     localStorage.setItem('user', JSON.stringify({
       id: response.data.id,
       name: response.data.name,
+      username: response.data.username,
       email: response.data.email,
       role: response.data.role,
       avatarUrl: response.data.avatarUrl
@@ -28,6 +29,7 @@ export const login = async (data) => {
     localStorage.setItem('user', JSON.stringify({
       id: response.data.id,
       name: response.data.name,
+      username: response.data.username,
       email: response.data.email,
       role: response.data.role,
       avatarUrl: response.data.avatarUrl || null
@@ -63,6 +65,7 @@ export const getCurrentUser = async () => {
           ...existingUser,
           id: response.data.id,
           name: response.data.name,
+          username: response.data.username,
           email: response.data.email,
           role: response.data.role,
           avatarUrl: response.data.avatarUrl || existingUser.avatarUrl || null
@@ -84,6 +87,7 @@ export const updateProfile = async (data) => {
     localStorage.setItem('user', JSON.stringify({
       id: response.data.id,
       name: response.data.name,
+      username: response.data.username,
       email: response.data.email,
       role: response.data.role,
       avatarUrl: response.data.avatarUrl
@@ -108,18 +112,61 @@ export const adminLogout = () => {
 };
 
 export const googleLogin = async (idToken) => {
-  const response = await api.post(`${basePath}/google`, { idToken });
-  // Store token and user info
-  if (response.data.token) {
-    localStorage.setItem('token', response.data.token);
-    // Note: avatarUrl will be updated after fetching from /me endpoint
-    localStorage.setItem('user', JSON.stringify({
-      id: response.data.id,
-      name: response.data.name,
-      email: response.data.email,
-      role: response.data.role,
-      avatarUrl: response.data.avatarUrl || null
-    }));
+  if (!idToken || typeof idToken !== 'string' || idToken.trim() === '') {
+    throw new Error('Google ID token không hợp lệ');
   }
-  return response.data;
+  
+  try {
+    const response = await api.post(`${basePath}/google`, { idToken });
+    // Store token and user info
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      // Note: avatarUrl will be updated after fetching from /me endpoint
+      localStorage.setItem('user', JSON.stringify({
+        id: response.data.id,
+        name: response.data.name,
+        username: response.data.username,
+        email: response.data.email,
+        role: response.data.role,
+        avatarUrl: response.data.avatarUrl || null
+      }));
+    }
+    return response.data;
+  } catch (error) {
+    console.error('Google login API error:', error);
+    // Re-throw with better error message
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else if (error.response?.status === 400) {
+      throw new Error('Token Google không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.');
+    } else {
+      throw error;
+    }
+  }
+};
+
+export const guestLogin = async () => {
+  try {
+    const response = await api.post(`${basePath}/guest`);
+    // Store token and user info
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify({
+        id: response.data.id,
+        name: response.data.name,
+        username: response.data.username,
+        email: response.data.email,
+        role: response.data.role,
+        avatarUrl: response.data.avatarUrl || null
+      }));
+    }
+    return response.data;
+  } catch (error) {
+    console.error('Guest login API error:', error);
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error('Không thể đăng nhập với tài khoản khách. Vui lòng thử lại.');
+    }
+  }
 };

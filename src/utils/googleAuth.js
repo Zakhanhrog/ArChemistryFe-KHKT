@@ -4,18 +4,14 @@
  */
 
 const getClientId = () => {
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  if (!clientId || clientId.trim() === '') {
-    console.error('VITE_GOOGLE_CLIENT_ID chưa được cấu hình trong file .env');
-    return null;
-  }
-  return clientId;
+  // Google OAuth Client ID
+  return '700398442370-0dfqk14t9qun39lts39c1u37f332ni95.apps.googleusercontent.com';
 };
 
 export const initializeGoogleAuth = (onSuccess, onError) => {
   const clientId = getClientId();
-  if (!clientId) {
-    onError(new Error('Google Client ID chưa được cấu hình. Vui lòng thêm VITE_GOOGLE_CLIENT_ID vào file .env'));
+  if (!clientId || clientId.trim() === '') {
+    onError(new Error('Google Client ID chưa được cấu hình'));
     return;
   }
 
@@ -25,10 +21,15 @@ export const initializeGoogleAuth = (onSuccess, onError) => {
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: (response) => {
-          if (response.credential) {
-            onSuccess(response.credential);
-          } else {
-            onError(new Error('Không nhận được token từ Google'));
+          try {
+            if (response && response.credential) {
+              onSuccess(response.credential);
+            } else {
+              onError(new Error('Không nhận được token từ Google'));
+            }
+          } catch (err) {
+            console.error('Error in Google callback:', err);
+            onError(new Error('Lỗi xử lý phản hồi từ Google: ' + err.message));
           }
         },
       });
@@ -42,12 +43,12 @@ export const initializeGoogleAuth = (onSuccess, onError) => {
     return;
   }
 
-  // If not ready, wait for it
+  // If not ready, wait for it - reduced frequency for better performance
   const interval = setInterval(() => {
     if (checkGoogleAuth()) {
       clearInterval(interval);
     }
-  }, 100);
+  }, 200);
 
   // Timeout after 10 seconds
   setTimeout(() => {
@@ -77,15 +78,66 @@ export const renderGoogleButton = (elementId, onSuccess, onError) => {
     return;
   }
 
+  const buttonElement = document.getElementById(elementId);
+  if (!buttonElement) {
+    return;
+  }
+
+  // Kiểm tra nếu button đã được render rồi thì không render lại
+  if (buttonElement.querySelector('iframe')) {
+    return;
+  }
+
+  // Wait a bit for the element to be properly sized
+  setTimeout(() => {
+    // Get the width of the container
+    const containerWidth = buttonElement.offsetWidth || buttonElement.parentElement?.offsetWidth || 400;
+    
+    // Clear any existing content
+    buttonElement.innerHTML = '';
+
+    try {
   window.google.accounts.id.renderButton(
-    document.getElementById(elementId),
+      buttonElement,
     {
-      theme: 'outline',
+          theme: 'filled_white',
       size: 'large',
       text: 'signin_with',
-      width: '100%',
+        width: containerWidth,
       locale: 'vi',
+          shape: 'pill',
     }
   );
+    } catch (err) {
+      console.error('Error rendering Google button:', err);
+      onError(err);
+    }
+  }, 100);
+};
+
+export const triggerGoogleLogin = (onSuccess, onError) => {
+  if (!window.google?.accounts?.id) {
+    onError(new Error('Google Identity Services chưa được khởi tạo. Vui lòng đợi một chút và thử lại.'));
+    return;
+  }
+
+  try {
+    // Try to trigger One Tap prompt
+    window.google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        // If One Tap is not available, try to click the rendered button
+        const buttonElement = document.querySelector('#google-signin-button iframe');
+        if (buttonElement) {
+          // Try to click the iframe (may not work due to cross-origin restrictions)
+          buttonElement.contentWindow?.postMessage('click', '*');
+        } else {
+          // If button is not rendered yet, show error
+          onError(new Error('Vui lòng đợi nút đăng nhập Google hiển thị và thử lại.'));
+        }
+      }
+    });
+  } catch (err) {
+    onError(new Error('Không thể khởi động đăng nhập Google. Vui lòng thử lại.'));
+  }
 };
 

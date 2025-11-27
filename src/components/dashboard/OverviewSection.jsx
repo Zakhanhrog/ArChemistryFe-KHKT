@@ -55,25 +55,25 @@ function OverviewSection() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-gray-700">
           <div className="flex gap-3">
-            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full text-white flex items-center justify-center font-semibold text-xs" style={{ backgroundColor: '#1689E4' }}>
               1
             </div>
             <p>Mở sách giáo khoa Hóa học của bạn</p>
           </div>
           <div className="flex gap-3">
-            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full text-white flex items-center justify-center font-semibold text-xs" style={{ backgroundColor: '#1689E4' }}>
               2
             </div>
             <p>Vào tab "Quét ngay" và cho phép camera</p>
           </div>
           <div className="flex gap-3">
-            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full text-white flex items-center justify-center font-semibold text-xs" style={{ backgroundColor: '#1689E4' }}>
               3
             </div>
             <p>Đưa camera vào hình ảnh marker trong sách</p>
           </div>
           <div className="flex gap-3">
-            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full text-white flex items-center justify-center font-semibold text-xs" style={{ backgroundColor: '#1689E4' }}>
               4
             </div>
             <p>Xem mô hình 3D hiển thị và tương tác để học tập</p>

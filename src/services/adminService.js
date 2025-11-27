@@ -3,8 +3,8 @@ import axios from 'axios';
 const basePath = '/api/admin';
 
 // Create a separate axios instance for admin requests
-const adminApi = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080',
+export const adminApi = axios.create({
+  baseURL: 'http://localhost:8080',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -24,19 +24,48 @@ adminApi.interceptors.request.use(
   }
 );
 
+// Track redirect state to prevent multiple redirects
+let isAdminRedirecting = false;
+let adminRedirectTimeout = null;
+
 // Response interceptor
 adminApi.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = error.response?.status;
     const message = error.response?.data?.message ?? error.message;
+    const errorType = error.response?.data?.errorType;
     
-    // Handle 401 Unauthorized - clear token and redirect to admin login
-    if (error.response?.status === 401) {
+    // Only handle 401 if it's actually a token expiration issue
+    if (status === 401) {
+      const isTokenExpired = message?.toLowerCase().includes('token') || 
+                            message?.toLowerCase().includes('expired') ||
+                            message?.toLowerCase().includes('unauthorized');
+      
+      if (isTokenExpired && !isAdminRedirecting) {
       localStorage.removeItem('adminToken');
       localStorage.removeItem('adminUser');
-      if (!window.location.pathname.includes('/admin/login')) {
+        
+        if (adminRedirectTimeout) {
+          clearTimeout(adminRedirectTimeout);
+        }
+        
+        const currentPath = window.location.pathname;
+        if (!currentPath.includes('/admin/login')) {
+          isAdminRedirecting = true;
+          adminRedirectTimeout = setTimeout(() => {
         window.location.href = '/admin/login';
+            setTimeout(() => {
+              isAdminRedirecting = false;
+            }, 1000);
+          }, 100);
+        }
       }
+    }
+    
+    // For database connection errors (503), don't redirect
+    if (status === 503 || errorType === 'DATABASE_CONNECTION_ERROR') {
+      console.warn('Database connection error:', message);
     }
     
     return Promise.reject({ ...error, message });

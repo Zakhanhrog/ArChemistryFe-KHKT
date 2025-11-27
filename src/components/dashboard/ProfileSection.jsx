@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LogOut, Mail, User, Edit, Lock, Shield, Trash2, ChevronRight } from 'lucide-react';
+import { Mail, ChevronRight, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,10 +10,8 @@ import useAuthStore from '@/hooks/useAuth';
 import { normalizeImageUrl } from '@/utils/imageUrl';
 
 const accountMenuItems = [
-  { id: 'edit', icon: Edit, title: 'Chỉnh sửa hồ sơ', description: 'Cập nhật thông tin cá nhân', color: 'text-blue-600' },
-  { id: 'password', icon: Lock, title: 'Đổi mật khẩu', description: 'Thay đổi mật khẩu đăng nhập', color: 'text-gray-600' },
-  { id: 'privacy', icon: Shield, title: 'Quyền riêng tư', description: 'Quản lý cài đặt bảo mật', color: 'text-gray-600' },
-  { id: 'delete', icon: Trash2, title: 'Xóa tài khoản', description: 'Xóa vĩnh viễn tài khoản của bạn', color: 'text-red-600' },
+  { id: 'edit', iconSrc: '/icon/edit.svg', title: 'Chỉnh sửa hồ sơ', description: 'Cập nhật thông tin cá nhân', color: 'text-blue-600' },
+  { id: 'password', iconSrc: '/icon/password.svg', title: 'Đổi mật khẩu', description: 'Thay đổi mật khẩu đăng nhập', color: 'text-gray-600' },
 ];
 
 function ProfileSection() {
@@ -23,16 +21,44 @@ function ProfileSection() {
   const [showEditProfileDialog, setShowEditProfileDialog] = useState(false);
   const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [avatarError, setAvatarError] = useState(false);
 
   // Force re-render when user changes
   useEffect(() => {
     setRefreshKey(prev => prev + 1);
+    setAvatarError(false); // Reset error when avatar URL changes
+  }, [user?.avatarUrl, user?.id]);
+
+  // Also listen to localStorage changes to catch updates from other components
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const storedUser = JSON.parse(userStr);
+          if (storedUser.avatarUrl !== user?.avatarUrl) {
+            setRefreshKey(prev => prev + 1);
+          }
+        } catch (e) {
+          // Error parsing user from localStorage
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    // Also check on interval to catch updates from same tab - reduced frequency for better performance
+    const interval = setInterval(handleStorageChange, 2000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
   }, [user?.avatarUrl]);
 
   const handleLogout = () => {
     logout();
     setShowLogoutDialog(false);
-    navigate('/');
+    navigate('/welcome');
   };
 
   const handleAccountMenuItemClick = (itemId) => {
@@ -42,14 +68,6 @@ function ProfileSection() {
         break;
       case 'password':
         setShowChangePasswordDialog(true);
-        break;
-      case 'privacy':
-        // TODO: Implement privacy settings
-        console.log('Privacy settings');
-        break;
-      case 'delete':
-        // TODO: Implement delete account
-        console.log('Delete account');
         break;
       default:
         break;
@@ -61,8 +79,12 @@ function ProfileSection() {
     return (
       <section className="flex min-h-[60vh] items-center justify-center px-4">
         <div className="w-full max-w-md flex flex-col items-center gap-6 py-8 text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-100 ring-4 ring-blue-50">
-            <User className="h-10 w-10 text-blue-600" />
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-100 ring-4 ring-blue-50 overflow-hidden">
+            <img 
+              src="/icon/canhan.svg" 
+              alt="User"
+              className="h-8 w-8 object-contain"
+            />
           </div>
 
           <div className="space-y-2">
@@ -75,7 +97,10 @@ function ProfileSection() {
           <div className="flex flex-col gap-3 w-full">
             <Button 
               size="lg" 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200"
+              className="w-full text-white shadow-lg"
+              style={{ backgroundColor: '#1689E4', boxShadow: '0 10px 15px -3px rgba(22, 137, 228, 0.3)' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1373C4'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1689E4'}
               onClick={() => navigate('/login')}
             >
               Đăng nhập ngay
@@ -94,6 +119,9 @@ function ProfileSection() {
     );
   }
 
+  // Check if user is guest
+  const isGuest = user?.role === 'GUEST';
+
   // Authenticated - Show profile content
   return (
     <>
@@ -101,90 +129,90 @@ function ProfileSection() {
         {/* User Profile Card */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Thông tin cá nhân</CardTitle>
-            <CardDescription>Quản lý hồ sơ và tài khoản của bạn.</CardDescription>
+            <CardTitle className="text-base">{isGuest ? 'Thông tin khách' : 'Thông tin cá nhân'}</CardTitle>
+            <CardDescription>{isGuest ? 'Tài khoản khách - Dùng thử miễn phí' : 'Quản lý hồ sơ và tài khoản của bạn.'}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 ring-2 ring-blue-200 overflow-hidden">
-                {user?.avatarUrl ? (
+                {user?.avatarUrl && user.avatarUrl.trim() !== '' && !avatarError ? (
                   <img
                     key={`${user.avatarUrl}-${refreshKey}`}
-                    src={normalizeImageUrl(user.avatarUrl) || ''}
+                    src={`${normalizeImageUrl(user.avatarUrl)}?t=${refreshKey}`}
                     alt={user?.name || 'Avatar'}
                     className="h-full w-full object-cover"
                     crossOrigin="anonymous"
-                    onError={(e) => {
-                      console.error('Error loading avatar:', user.avatarUrl);
-                      // Try to reload with cache busting
-                      const img = e.target;
-                      const originalSrc = img.src;
-                      if (!originalSrc.includes('?')) {
-                        img.src = originalSrc + '?t=' + Date.now();
-                      } else {
-                        // If still fails, hide and show default icon
-                        img.style.display = 'none';
-                      }
+                    onError={() => {
+                      setAvatarError(true);
                     }}
                     onLoad={() => {
-                      console.log('Avatar loaded successfully:', user.avatarUrl);
+                      setAvatarError(false);
                     }}
                   />
                 ) : (
-                <User className="h-8 w-8 text-blue-600" />
+                  <User className="h-8 w-8 text-gray-400" />
                 )}
               </div>
               <div className="flex-1 space-y-1">
-                <p className="font-medium text-gray-900">{user?.name || 'Người dùng'}</p>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Mail className="h-4 w-4" />
-                  <span>{user?.email || 'user@archemistry.com'}</span>
-                </div>
+                <p 
+                  className="font-medium text-gray-900"
+                  style={{ fontFamily: "'Momo Signature', sans-serif", fontWeight: 500 }}
+                >
+                  {isGuest ? 'Khách' : (user?.name || 'Người dùng')}
+                </p>
+                {!isGuest && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Mail className="h-4 w-4" />
+                    <span>{user?.email || 'user@archemistry.com'}</span>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Account Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Quản lý tài khoản</CardTitle>
-            <CardDescription>Quản lý thông tin và cài đặt tài khoản của bạn.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            {accountMenuItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleAccountMenuItemClick(item.id)}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors group"
-                >
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 group-hover:bg-gray-200 transition-colors ${item.color}`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className={`font-medium text-sm ${item.id === 'delete' ? 'text-red-600' : 'text-gray-900'}`}>
-                      {item.title}
-                    </p>
-                    <p className="text-xs text-gray-500">{item.description}</p>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
-                </button>
-              );
-            })}
-          </CardContent>
-        </Card>
+        {/* Account Management - Only show for non-guest users */}
+        {!isGuest && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Quản lý tài khoản</CardTitle>
+              <CardDescription>Quản lý thông tin và cài đặt tài khoản của bạn.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {accountMenuItems.map((item) => {
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleAccountMenuItemClick(item.id)}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors group"
+                  >
+                    <img 
+                      src={item.iconSrc} 
+                      alt={item.title}
+                      className="h-9 w-9 object-contain -mt-0.5"
+                    />
+                    <div className="flex-1 text-left">
+                      <p className={`font-medium text-sm ${item.id === 'delete' ? 'text-red-600' : 'text-gray-900'}`}>
+                        {item.title}
+                      </p>
+                      <p className="text-xs text-gray-500">{item.description}</p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-gray-400" />
+                  </button>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Logout Button - Outside Account Management */}
         <div className="pt-2 pb-6">
           <Button 
             variant="outline" 
             size="lg"
-            className="w-full justify-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 h-12 text-base font-medium" 
+            className="w-full justify-center border-gray-300 text-gray-700 hover:bg-red-50 h-12 text-base font-medium" 
             onClick={() => setShowLogoutDialog(true)}
           >
-            <LogOut className="h-5 w-5" />
             Đăng xuất
           </Button>
         </div>
@@ -196,8 +224,10 @@ function ProfileSection() {
         onOpenChange={(open) => {
           setShowEditProfileDialog(open);
           if (!open) {
-            // Force re-render when dialog closes
+            // Force re-render when dialog closes to show updated avatar
+            setTimeout(() => {
             setRefreshKey(prev => prev + 1);
+            }, 200);
           }
         }}
         user={user}
@@ -213,8 +243,12 @@ function ProfileSection() {
       <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-sm left-1/2 -translate-x-1/2 p-5">
           <DialogHeader className="space-y-3">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <LogOut className="h-6 w-6 text-red-600" />
+            <div className="mx-auto flex items-center justify-center">
+              <img 
+                src="/icon/logout.svg" 
+                alt="Đăng xuất"
+                className="h-12 w-12 object-contain"
+              />
             </div>
             <DialogTitle className="text-center text-lg font-semibold text-gray-900">
               Xác nhận đăng xuất

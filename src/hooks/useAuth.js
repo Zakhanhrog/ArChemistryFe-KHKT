@@ -12,6 +12,7 @@ const useAuthStore = create(
         const user = {
           id: userData.id,
           name: userData.name,
+          username: userData.username,
           email: userData.email,
           role: userData.role,
           avatarUrl: userData.avatarUrl
@@ -41,6 +42,10 @@ const useAuthStore = create(
         if (token && userStr) {
           try {
             const user = JSON.parse(userStr);
+            // Ensure avatarUrl is included
+            if (!user.avatarUrl) {
+              user.avatarUrl = null;
+            }
             set({ user, token, isAuthenticated: true });
           } catch (e) {
             // Invalid data, clear it

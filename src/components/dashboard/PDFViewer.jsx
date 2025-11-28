@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, X, FileText, Grid3x3 } from 'lucide-react';
 import { getTextbookPdfUrl } from '@/services/textbookService';
 import TextbookImagesSection from './TextbookImagesSection';
 
@@ -278,15 +278,26 @@ function PDFViewer({ textbookId, textbookName, bookSetName, grade, onClose }) {
   };
 
   useEffect(() => {
-    if (pdfRef.current && pageNumber) {
-      renderPage(pdfRef.current, pageNumber);
+    // Only render when in single page view
+    if (pdfRef.current && pageNumber && !isGridView && canvasRef.current) {
+      // Small delay to ensure canvas is fully mounted when switching views
+      const timer = setTimeout(() => {
+        if (canvasRef.current && pdfRef.current && !isGridView) {
+          renderPage(pdfRef.current, pageNumber);
+        }
+      }, 50);
+      
+      return () => {
+        clearTimeout(timer);
+        renderCancelRef.current = true;
+      };
     }
     
-    // Cleanup: cancel render when component unmounts or pageNumber changes
+    // Cleanup: cancel render when component unmounts or dependencies change
     return () => {
       renderCancelRef.current = true;
     };
-  }, [pageNumber]);
+  }, [pageNumber, isGridView]);
 
   const goToPrevPage = () => {
     if (pageNumber > 1 && !rendering) {
@@ -471,13 +482,13 @@ function PDFViewer({ textbookId, textbookName, bookSetName, grade, onClose }) {
         >
           {isGridView ? (
             <>
-              <img src="/icon/iconpage.svg" alt="Trang đơn" className="h-7 w-7" />
-              <span className="hidden sm:inline text-sm">Trang đơn</span>
+              <FileText className="h-5 w-5 text-gray-700" />
+              <span className="hidden sm:inline text-sm text-gray-700">Trang đơn</span>
             </>
           ) : (
             <>
-              <img src="/icon/iconluoi.svg" alt="Lưới" className="h-7 w-7" />
-              <span className="hidden sm:inline text-sm">Lưới</span>
+              <Grid3x3 className="h-5 w-5 text-gray-700" />
+              <span className="hidden sm:inline text-sm text-gray-700">Lưới</span>
             </>
           )}
         </button>

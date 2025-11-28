@@ -6,27 +6,95 @@ import useAuthStore from '@/hooks/useAuth';
 import { initializeGoogleAuth, renderGoogleButton } from '@/utils/googleAuth';
 import { googleLogin, getCurrentUser, guestLogin } from '@/services/authService';
 
+// TypingText component for typing animation
+function TypingText({ text, speed = 80, onComplete }) {
+  const [displayedText, setDisplayedText] = useState('');
+  const [showCursor, setShowCursor] = useState(true);
+  const [isComplete, setIsComplete] = useState(false);
+  const indexRef = useRef(0);
+  const cursorIntervalRef = useRef(null);
+
+  useEffect(() => {
+    // Reset và chạy typing effect mỗi khi component mount
+    setDisplayedText('');
+    indexRef.current = 0;
+    setIsComplete(false);
+    setShowCursor(true);
+    
+    // Clear existing cursor interval
+    if (cursorIntervalRef.current) {
+      clearInterval(cursorIntervalRef.current);
+    }
+    
+    const interval = setInterval(() => {
+      if (indexRef.current < text.length) {
+        setDisplayedText(text.substring(0, indexRef.current + 1));
+        indexRef.current++;
+      } else {
+        clearInterval(interval);
+        setIsComplete(true);
+        setShowCursor(false);
+        // Clear cursor interval when complete
+        if (cursorIntervalRef.current) {
+          clearInterval(cursorIntervalRef.current);
+          cursorIntervalRef.current = null;
+        }
+        if (onComplete) {
+          onComplete();
+        }
+      }
+    }, speed);
+    
+    // Cursor blinking effect
+    cursorIntervalRef.current = setInterval(() => {
+      setShowCursor(prev => !prev);
+    }, 530);
+    
+    return () => {
+      clearInterval(interval);
+      if (cursorIntervalRef.current) {
+        clearInterval(cursorIntervalRef.current);
+      }
+    };
+  }, [text, speed, onComplete]);
+
+  return (
+    <span>
+      {displayedText}
+      {!isComplete && showCursor && <span className="animate-pulse">|</span>}
+    </span>
+  );
+}
+
 function WelcomePage() {
   const navigate = useNavigate();
   const { setUser, isAuthenticated } = useAuthStore();
   const [error, setError] = useState('');
   const [pageLoaded, setPageLoaded] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
+  const [showTypingText, setShowTypingText] = useState(false);
+  const [typingComplete, setTypingComplete] = useState(false);
   const vantaRef = useRef(null);
   const vantaEffect = useRef(null);
 
   // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/ar?tab=profile', { replace: true });
+      navigate('/login-loading', { replace: true });
     }
   }, [isAuthenticated, navigate]);
 
   // Fade in effect khi page load
   useEffect(() => {
     setPageLoaded(false);
+    setShowTypingText(false);
+    setTypingComplete(false);
     const timer = setTimeout(() => {
       setPageLoaded(true);
+      // Show typing text after a delay (similar to AI Assistant)
+      setTimeout(() => {
+        setShowTypingText(true);
+      }, 300);
     }, 50);
     return () => clearTimeout(timer);
   }, []);
@@ -95,45 +163,14 @@ function WelcomePage() {
         return;
       }
 
-      try {
-        const response = await googleLogin(idToken);
-        
-        // Set initial user data
-        setUser({
-          id: response.id,
-          name: response.name,
-          username: response.username,
-          email: response.email,
-          role: response.role,
-          token: response.token,
-          avatarUrl: response.avatarUrl || null
-        });
-        
-        // Refresh user info from server to ensure avatarUrl is up to date
-        try {
-          const currentUser = await getCurrentUser();
-          if (currentUser) {
-            setUser({
-              id: currentUser.id,
-              name: currentUser.name,
-              username: currentUser.username,
-              email: currentUser.email,
-              role: currentUser.role,
-              token: response.token,
-              avatarUrl: currentUser.avatarUrl || null
-            });
-          }
-        } catch (refreshError) {
-          // Continue with login even if refresh fails
+      // Navigate to loading page immediately with Google token
+      navigate('/login-loading', { 
+        replace: true,
+        state: { 
+          type: 'google', 
+          idToken 
         }
-        
-        // Use replace: true to prevent going back to login page
-        navigate('/ar?tab=profile', { replace: true });
-      } catch (err) {
-        console.error('Google login error:', err);
-        const errorMessage = err.response?.data?.message || err.message || 'Đăng nhập bằng Google thất bại. Vui lòng thử lại.';
-        setError(errorMessage);
-      }
+      });
     };
 
     const handleGoogleError = (err) => {
@@ -266,9 +303,22 @@ function WelcomePage() {
               </div>
 
               {/* Title */}
-              <h1 className="text-lg sm:text-xl font-bold text-center text-gray-900 mb-8">
-                Bạn đã có tài khoản chưa?
+              {showTypingText && (
+                <h1 
+                  className="text-lg sm:text-xl text-center text-gray-900 mb-8"
+                  style={{ fontFamily: "'Momo Signature', sans-serif", fontWeight: 500 }}
+                >
+                  {typingComplete ? (
+                    "Bạn đã có tài khoản chưa?"
+                  ) : (
+                    <TypingText 
+                      text="Bạn đã có tài khoản chưa?"
+                      speed={80}
+                      onComplete={() => setTypingComplete(true)}
+                    />
+                  )}
               </h1>
+              )}
 
               {/* Error Message */}
               {error && (
@@ -279,58 +329,33 @@ function WelcomePage() {
 
               {/* Buttons */}
               <div className="space-y-4">
-                {/* Register Button */}
-                <Button
-                  onClick={() => handleNavigate('/register')}
-                  className="h-12 w-full gap-2 text-white shadow-lg"
-                  style={{ backgroundColor: '#1689E4', boxShadow: '0 10px 15px -3px rgba(22, 137, 228, 0.3)' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1373C4'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1689E4'}
-                >
-                  Đăng ký
-                </Button>
-
                 {/* Free Trial Button */}
                 <Button
-                  onClick={async () => {
-                    try {
+                  onClick={() => {
                       setError('');
-                      const response = await guestLogin();
-                      
-                      // Set initial user data
-                      setUser({
-                        id: response.id,
-                        name: response.name,
-                        username: response.username,
-                        email: response.email,
-                        role: response.role,
-                        token: response.token,
-                        avatarUrl: response.avatarUrl || null
-                      });
-                      
-                      // Navigate to AR page
-                      navigate('/ar?tab=profile', { replace: true });
-                    } catch (err) {
-                      console.error('Guest login error:', err);
-                      const errorMessage = err.response?.data?.message || err.message || 'Đăng nhập với tài khoản khách thất bại. Vui lòng thử lại.';
-                      setError(errorMessage);
-                    }
+                    // Navigate to loading page immediately for guest login
+                    navigate('/login-loading', { 
+                      replace: true,
+                      state: { 
+                        type: 'guest' 
+                      }
+                    });
                   }}
-                  className="h-12 w-full gap-2 bg-white/40 backdrop-blur-xl hover:bg-white/50 border-2 border-white/30 text-gray-800 font-semibold shadow-lg transition-all duration-200 relative overflow-hidden animate-pulse-glow hover:scale-[1.02] active:scale-[0.98]"
+                  className="h-12 w-full gap-2 text-white font-semibold shadow-lg transition-all duration-200 relative overflow-hidden hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ 
+                    backgroundColor: '#1689E4', 
+                    boxShadow: '0 10px 15px -3px rgba(22, 137, 228, 0.3)',
+                    border: 'none'
+                  }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+                    e.currentTarget.style.backgroundColor = '#1373C4';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                    e.currentTarget.style.backgroundColor = '#1689E4';
                   }}
                 >
-                  {/* Shimmer effect overlay */}
-                  <div className="absolute inset-0 animate-shimmer pointer-events-none" />
-                  
                   <span className="text-base relative z-10">Dùng thử miễn phí</span>
-                  <span className="text-[10px] font-extrabold text-white px-2 py-0.5 rounded-full ml-1.5 shadow-sm animate-badge-pulse relative z-10" style={{ backgroundColor: '#1689E4' }}>FREE TRIAL</span>
+                  <span className="text-[10px] font-extrabold text-white px-2 py-0.5 rounded-full ml-1.5 shadow-sm animate-badge-pulse relative z-10" style={{ backgroundColor: 'rgba(255, 255, 255, 0.3)' }}>FREE TRIAL</span>
                 </Button>
 
                 {/* Google Sign-In Button */}
@@ -368,23 +393,31 @@ function WelcomePage() {
                     <span className="text-sm font-medium text-gray-800">Đăng nhập bằng Google</span>
                   </button>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Footer - Already have account link */}
-        <div className={`pb-8 text-center transition-all duration-700 ease-out delay-300 ${
-          pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}>
+                {/* Register and Login buttons - same row */}
+                <div className="flex items-center justify-between gap-4 pt-2">
+                  {/* Register Button - Left (no background, text only) */}
+                  <button
+                    onClick={() => handleNavigate('/register')}
+                    className="inline-flex items-center justify-center gap-2 text-base font-bold text-[#1689E4] hover:text-[#1373C4] transition-colors group"
+                    style={{ lineHeight: '1.5', textDecoration: 'underline', textDecorationThickness: '1px', textUnderlineOffset: '2px' }}
+                  >
+                    <span style={{ lineHeight: '1.5', display: 'inline-block' }}>Đăng ký</span>
+                  </button>
+
+                  {/* Already have account - Right */}
           <button
             onClick={() => handleNavigate('/login')}
             className="inline-flex items-center justify-center gap-2 text-base font-bold text-gray-700 hover:text-[#1689E4] transition-colors group"
-            style={{ lineHeight: '1.5' }}
+            style={{ lineHeight: '1.5', textDecoration: 'underline', textDecorationThickness: '1px', textUnderlineOffset: '2px' }}
           >
             <span style={{ lineHeight: '1.5', display: 'inline-block' }}>Đã có tài khoản</span>
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 animate-bounce-horizontal flex-shrink-0" style={{ marginTop: '1px' }} />
           </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

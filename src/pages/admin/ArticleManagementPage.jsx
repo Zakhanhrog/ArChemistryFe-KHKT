@@ -7,11 +7,12 @@ import {
   toggleArticleStatus 
 } from '@/services/adminArticleService';
 import { uploadFile } from '@/services/uploadService';
+import { getAiArticleInterval, updateAiArticleInterval } from '@/services/systemConfigService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, Power, Image as ImageIcon, X, Bold, Italic, Underline, List, Link } from 'lucide-react';
+import { Plus, Edit, Trash2, Power, Image as ImageIcon, X, Bold, Italic, Underline, List, Link, Settings, Clock } from 'lucide-react';
 import { useToast } from '@/components/ui/toast';
 import { useConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -42,10 +43,81 @@ export default function ArticleManagementPage() {
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const fileInputRef = useRef(null);
   const editorImageInputRef = useRef(null);
+  
+  // AI Article Config
+  const [aiIntervalConfig, setAiIntervalConfig] = useState(null);
+  const [loadingConfig, setLoadingConfig] = useState(false);
+  const [showConfigDialog, setShowConfigDialog] = useState(false);
+  const [intervalHours, setIntervalHours] = useState(24);
+  const [intervalMinutes, setIntervalMinutes] = useState(0);
 
   useEffect(() => {
     loadArticles();
+    loadAiIntervalConfig();
   }, []);
+
+  const loadAiIntervalConfig = async () => {
+    try {
+      setLoadingConfig(true);
+      const config = await getAiArticleInterval();
+      setAiIntervalConfig(config);
+      // Convert milliseconds to hours and minutes
+      const totalMs = parseInt(config.configValue || '86400000');
+      const totalMinutes = Math.floor(totalMs / (1000 * 60));
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      setIntervalHours(hours);
+      setIntervalMinutes(minutes);
+    } catch (error) {
+      console.error('Error loading AI interval config:', error);
+    } finally {
+      setLoadingConfig(false);
+    }
+  };
+
+  const handleUpdateInterval = async () => {
+    try {
+      setLoadingConfig(true);
+      // Convert hours and minutes to milliseconds
+      const totalMinutes = intervalHours * 60 + intervalMinutes;
+      if (totalMinutes < 1) {
+        toast.error('Thời gian tối thiểu là 1 phút');
+        return;
+      }
+      const intervalMs = totalMinutes * 60 * 1000;
+      
+      // Format description
+      let description = '';
+      if (intervalHours > 0 && intervalMinutes > 0) {
+        description = `Thời gian giữa các lần tạo bài viết AI mới: ${intervalHours} giờ ${intervalMinutes} phút`;
+      } else if (intervalHours > 0) {
+        description = `Thời gian giữa các lần tạo bài viết AI mới: ${intervalHours} giờ`;
+      } else {
+        description = `Thời gian giữa các lần tạo bài viết AI mới: ${intervalMinutes} phút`;
+      }
+      
+      await updateAiArticleInterval(intervalMs, description);
+      
+      // Format success message
+      let successMsg = '';
+      if (intervalHours > 0 && intervalMinutes > 0) {
+        successMsg = `Đã cập nhật thời gian tạo bài AI: ${intervalHours} giờ ${intervalMinutes} phút`;
+      } else if (intervalHours > 0) {
+        successMsg = `Đã cập nhật thời gian tạo bài AI: ${intervalHours} giờ`;
+      } else {
+        successMsg = `Đã cập nhật thời gian tạo bài AI: ${intervalMinutes} phút`;
+      }
+      
+      toast.success(successMsg);
+      setShowConfigDialog(false);
+      loadAiIntervalConfig();
+    } catch (error) {
+      console.error('Error updating interval:', error);
+      toast.error('Có lỗi xảy ra khi cập nhật cấu hình');
+    } finally {
+      setLoadingConfig(false);
+    }
+  };
 
   // Helper function to format time ago
   const formatTimeAgo = (dateString) => {
@@ -332,6 +404,57 @@ export default function ArticleManagementPage() {
 
   return (
     <div className="space-y-6">
+      {/* AI Article Config Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Settings className="h-5 w-5 text-blue-600" />
+              <CardTitle className="text-lg">Cấu hình AI đề xuất bài viết</CardTitle>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowConfigDialog(true)}
+              className="gap-2"
+            >
+              <Clock className="h-4 w-4" />
+              Cài đặt
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <p className="text-sm text-gray-600">
+                Thời gian giữa các lần tạo bài viết AI mới:
+              </p>
+              <p className="text-lg font-semibold text-gray-900 mt-1">
+                {(() => {
+                  if (!aiIntervalConfig) return '24 giờ';
+                  const totalMs = parseInt(aiIntervalConfig.configValue || '86400000');
+                  const totalMinutes = Math.floor(totalMs / (1000 * 60));
+                  const hours = Math.floor(totalMinutes / 60);
+                  const minutes = totalMinutes % 60;
+                  if (hours > 0 && minutes > 0) {
+                    return `${hours} giờ ${minutes} phút`;
+                  } else if (hours > 0) {
+                    return `${hours} giờ`;
+                  } else {
+                    return `${minutes} phút`;
+                  }
+                })()}
+              </p>
+            </div>
+            <div className="text-sm text-gray-500">
+              {aiIntervalConfig && aiIntervalConfig.updatedAt && (
+                <span>Cập nhật: {formatTimeAgo(aiIntervalConfig.updatedAt)}</span>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Quản lý Bài viết</h1>
@@ -735,6 +858,94 @@ export default function ArticleManagementPage() {
               onClick={confirmCloseForm}
             >
               Bỏ thay đổi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Interval Config Dialog */}
+      <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
+        <DialogContent className="w-[calc(100%-2rem)] max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Cấu hình thời gian tạo bài AI
+            </DialogTitle>
+            <DialogDescription>
+              Đặt thời gian giữa các lần hệ thống tự động tạo bài viết mới bằng AI (tối thiểu 1 phút)
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Giờ
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="168"
+                  value={intervalHours}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 0;
+                    setIntervalHours(Math.max(0, Math.min(168, value)));
+                  }}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Phút
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={intervalMinutes}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 0;
+                    setIntervalMinutes(Math.max(0, Math.min(59, value)));
+                  }}
+                  className="w-full"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">
+              Tối thiểu: 1 phút, Tối đa: 168 giờ (7 ngày). Tổng thời gian: {(() => {
+                const totalMinutes = intervalHours * 60 + intervalMinutes;
+                if (totalMinutes < 60) {
+                  return `${totalMinutes} phút`;
+                } else {
+                  const h = Math.floor(totalMinutes / 60);
+                  const m = totalMinutes % 60;
+                  if (m > 0) {
+                    return `${h} giờ ${m} phút`;
+                  } else {
+                    return `${h} giờ`;
+                  }
+                }
+              })()}
+            </p>
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Lưu ý:</strong> Hệ thống sẽ kiểm tra mỗi giờ xem đã đến lúc tạo bài mới chưa. 
+                Bài viết chỉ được tạo khi đã đủ thời gian quy định kể từ bài AI cuối cùng.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowConfigDialog(false)}
+              disabled={loadingConfig}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={handleUpdateInterval}
+              disabled={loadingConfig || (intervalHours === 0 && intervalMinutes === 0)}
+            >
+              {loadingConfig ? 'Đang lưu...' : 'Lưu cấu hình'}
             </Button>
           </DialogFooter>
         </DialogContent>

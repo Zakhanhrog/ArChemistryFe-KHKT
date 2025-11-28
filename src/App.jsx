@@ -9,6 +9,8 @@ const ARModelDetailPage = lazy(() => import('./pages/ARModelDetailPage.jsx'));
 const WelcomePage = lazy(() => import('./pages/WelcomePage.jsx'));
 const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'));
+const LoginLoadingPage = lazy(() => import('./pages/LoginLoadingPage.jsx'));
+const HelpPage = lazy(() => import('./pages/HelpPage.jsx'));
 const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage.jsx'));
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout.jsx'));
 const DashboardPage = lazy(() => import('./pages/admin/DashboardPage.jsx'));
@@ -54,6 +56,8 @@ function App() {
       <Route path="/welcome" element={<WelcomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/login-loading" element={<LoginLoadingPage />} />
+      <Route path="/help" element={<HelpPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<DashboardPage />} />

@@ -120,9 +120,13 @@
 }
 
 .animate-gradient-flow {
-  background: linear-gradient(-45deg, #3b82f6, #2563eb, #1d4ed8, #1e40af, #1e3a8a, #3b82f6, #60a5fa, #93c5fd, #3b82f6, #2563eb);
-  background-size: 400% 400%;
-  animation: gradient-flow 6s ease infinite;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #667eea 100%);
+  background-size: 300% 300%;
+  animation: gradient-flow 8s ease infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 @keyframes bounce-horizontal {
@@ -403,4 +407,35 @@
   );
   background-size: 1000px 100%;
   animation: shimmer 3s infinite;
+}
+
+@keyframes scale-in {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s ease-out;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
 }

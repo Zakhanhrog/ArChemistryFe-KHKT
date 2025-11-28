@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BookOpen, ArrowUpRight } from 'lucide-react';
 import ArticleDetailPage from './ArticleDetailPage';
-import { getActiveArticles } from '@/services/articleService';
+import { getActiveArticlesPaginated, markArticleAsRead } from '@/services/articleService';
+import useAuthStore from '@/hooks/useAuth';
 
 // Hàm format thời gian relative
 const getTimeAgo = (dateString) => {
@@ -49,28 +51,69 @@ const stripHtmlTags = (html) => {
 };
 
 function ExploreSection() {
+  const { isAuthenticated } = useAuthStore();
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [selectedArticleId, setSelectedArticleId] = useState(null);
   const [isSliding, setIsSliding] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
+  const pageSize = 10;
 
   useEffect(() => {
-    loadArticles();
+    loadArticles(0, true);
   }, []);
 
-  const loadArticles = async () => {
+  const loadArticles = async (page = 0, reset = false) => {
     try {
-      setLoading(true);
-      const data = await getActiveArticles();
-      setArticles(data);
+      if (reset) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+      
+      const data = await getActiveArticlesPaginated(page, pageSize);
+      
+      if (reset) {
+        setArticles(data.articles || []);
+      } else {
+        setArticles(prev => [...prev, ...(data.articles || [])]);
+      }
+      
+      setCurrentPage(data.currentPage || 0);
+      setHasNext(data.hasNext || false);
     } catch (error) {
       console.error('Error loading articles:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  const handleReadMore = (articleId) => {
+  const handleLoadMore = () => {
+    if (!loadingMore && hasNext) {
+      loadArticles(currentPage + 1, false);
+    }
+  };
+
+  const handleReadMore = async (articleId) => {
+    // Mark article as read if authenticated and article is AI generated
+    if (isAuthenticated) {
+      try {
+        const article = articles.find(a => a.id === articleId);
+        if (article && article.isAiGenerated && !article.isRead) {
+          await markArticleAsRead(articleId);
+          // Update local state
+          setArticles(prev => prev.map(a => 
+            a.id === articleId ? { ...a, isRead: true } : a
+          ));
+        }
+      } catch (error) {
+        console.error('Error marking article as read:', error);
+      }
+    }
+    
     setSelectedArticleId(articleId);
     // Trigger animation after state update
     requestAnimationFrame(() => {
@@ -140,15 +183,20 @@ function ExploreSection() {
         <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {articles.map((article) => {
+          const isUnread = article.isAiGenerated && !article.isRead;
           return (
             <Card 
               key={article.id} 
-                  className="hover:shadow-lg transition-shadow cursor-pointer"
+              className={`hover:shadow-lg transition-all duration-300 cursor-pointer ${
+                isUnread 
+                  ? 'border-2 border-blue-600 shadow-[0_0_0_3px_rgba(37,99,235,0.1)] hover:shadow-[0_0_0_4px_rgba(37,99,235,0.15)] animate-pulse-subtle' 
+                  : 'border border-gray-200'
+              }`}
             >
               <CardHeader className="pb-3 pt-4">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       {article.isAiGenerated && (
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full animate-gradient-flow text-white shadow-md hover:shadow-lg transition-shadow">
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full animate-gradient-flow text-white shadow-[0_0_8px_rgba(139,92,246,0.4),0_0_12px_rgba(168,85,247,0.3)] hover:shadow-[0_0_12px_rgba(139,92,246,0.5),0_0_16px_rgba(168,85,247,0.4)] transition-shadow duration-300">
                         AI đề xuất
                       </span>
                       )}
@@ -185,7 +233,7 @@ function ExploreSection() {
         })}
       </div>
 
-      {articles.length === 0 && (
+      {articles.length === 0 && !loading && (
         <Card>
           <CardContent className="py-12 text-center">
             <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-4" />
@@ -193,7 +241,25 @@ function ExploreSection() {
             <p className="text-sm text-gray-500">Các bài viết sẽ xuất hiện ở đây</p>
           </CardContent>
         </Card>
-          )}
+      )}
+
+      {hasNext && articles.length > 0 && (
+        <div className="flex justify-center mt-6">
+          <Button
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="min-w-[120px] gap-2"
+            style={{ backgroundColor: '#1689E4' }}
+          >
+            {loadingMore ? 'Đang tải...' : (
+              <>
+                Xem thêm
+                <ArrowUpRight className="h-4 w-4" />
+              </>
+            )}
+          </Button>
+        </div>
+      )}
         </>
       )}
     </section>
